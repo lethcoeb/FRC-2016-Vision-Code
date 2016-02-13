@@ -111,6 +111,7 @@ public class TowerTracker {
 	public static int maxHue = 93;
 	public static int maxSaturation = 255;
 	public static int maxValue = 240;
+	public static boolean calibrationMode = true;
 
 	public static boolean shouldRun = true;
 
@@ -147,7 +148,36 @@ public class TowerTracker {
 		// NetworkTable table = NetworkTable.getTable("SmartDashboard");
 		// main loop of the program
 		// setup camera
-		connectToCamera(0);
+		try {
+
+			System.out.println("start try catch");
+
+			// opens up the camera stream and tries to load it
+			videoCapture = new VideoCapture(0);
+
+			System.out.println("video capture has been init");
+
+			// Sets exposure to a lower value
+			Runtime.getRuntime().exec("v4l2-ctl --set-ctrl exposure_auto=1");
+			Runtime.getRuntime().exec("v4l2-ctl --set-ctrl exposure_absolute=10");
+
+			// replaces the ##.## with your team number
+			// videoCapture.open("http://10.8.6.14/mjpg/video.mjpg");
+			// videoCapture.open(0);
+			System.out.println("video stream has been opened");
+
+			// Example
+			// cap.open("http://10.30.19.11/mjpg/video.mjpg");
+			// wait until it is opened
+			while (!videoCapture.isOpened()) {
+			}
+
+			connectedToCamera = true;
+
+		} catch (Exception e) {
+			System.out.println("Failed to connect to camera: " + e);
+			connectedToCamera = false;
+		}
 
 		DatagramSocket socket = null;
 		InetAddress roborio = null;
@@ -178,12 +208,15 @@ public class TowerTracker {
 						connectedToCamera = true;
 					}
 
-					if (loops >= 50) {
-						loops = 0;
-						setParameters();
-						Imgcodecs.imwrite("/home/ubuntu/TowerTracker/output.png", matOriginal);
+					if (calibrationMode) {
+						loops++;
+						if (loops >= 50) {
+							loops = 0;
+							setParameters();
+							Imgcodecs.imwrite("/home/ubuntu/TowerTracker/output.png", matOriginal);
+						}
 					}
-					loops++;
+					
 					// time to actually process the acquired images
 					processImage();
 					fps = (1000 / (System.currentTimeMillis() + 1 - lastTime));
@@ -196,8 +229,6 @@ public class TowerTracker {
 					} else {
 						System.out.println("Lost connection to cam");
 						packet = generateDatagramPacket(false, 0.0, 0.0, roborio);
-
-						connectToCamera(1);
 
 					}
 					socket.send(packet);
@@ -222,65 +253,6 @@ public class TowerTracker {
 		// make sure the java process quits when the loop finishes
 		videoCapture.release();
 		System.exit(0);
-	}
-
-	public static void connectToCamera(int id) {
-		
-		double errLoops = 0;
-		// if the camera ever becomes disconnected, you need to use an id of 1
-		// to reconnect
-		// the id is only 0 if the camera was connected when the Jetson booted
-		
-
-		try {
-
-			System.out.println("start try catch");
-
-			// opens up the camera stream and tries to load it
-			try{
-				videoCapture = new VideoCapture(id);
-			}catch(Exception e){
-				
-			}
-
-			System.out.println("video capture has been init");
-
-			// Sets exposure to a lower value
-			Runtime.getRuntime().exec("v4l2-ctl --set-ctrl exposure_auto=1");
-			Runtime.getRuntime().exec("v4l2-ctl --set-ctrl exposure_absolute=10");
-
-			// replaces the ##.## with your team number
-			// videoCapture.open("http://10.8.6.14/mjpg/video.mjpg");
-			// videoCapture.open(0);
-			System.out.println("video stream has been opened");
-
-			// Example
-			// cap.open("http://10.30.19.11/mjpg/video.mjpg");
-			// wait until it is opened
-			boolean failedToConnect = false;
-			while (!videoCapture.isOpened()) {
-				if (id == 0) {
-					
-					errLoops++;
-
-					if (errLoops >= 10) {
-						failedToConnect = true;
-						break;
-					}
-				}
-			}
-
-			if (!failedToConnect) {
-				connectedToCamera = true;
-			} else {
-				connectedToCamera = false;
-			}
-
-		} catch (Exception e) {
-			System.out.println("Failed to connect to camera: " + e);
-			connectedToCamera = false;
-		}
-
 	}
 
 	/**
@@ -415,6 +387,9 @@ public class TowerTracker {
 						iterations++;
 					} else if (iterations == 8) {
 						maxValue = Integer.valueOf(str);
+						iterations++;
+					} else if (iterations == 9) {
+						calibrationMode = Boolean.valueOf(str);
 					}
 
 				}
