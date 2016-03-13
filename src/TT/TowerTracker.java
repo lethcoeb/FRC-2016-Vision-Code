@@ -237,7 +237,7 @@ public class TowerTracker {
 				} else {
 					// begin to try and reconnect
 					try {
-						roborio = InetAddress.getByName("roboRIO-1806-FRC.local");
+						roborio = InetAddress.getByName("10.18.6.2");
 						connectedToRio = true;
 					} catch (UnknownHostException e) {
 						System.out.println("Failed to connect to RoboRIO: " + e);
