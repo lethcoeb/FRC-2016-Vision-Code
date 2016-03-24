@@ -149,12 +149,16 @@ public class TowerTracker {
 			//this connects to an onboard cam
 			//http://roborio-1806-frc.local:5800/?action=stream
 			//videoCapture.open("http://10.18.6.16/mjpg/video.mjpg");
+			//videoCapture.open("http://roborio-1806-frc.local:5800/stream_simple.html");
 			videoCapture.open("http://roborio-1806-frc.local:5800/?action=stream");
 
 			System.out.println("Video capture has been initialized...");
 			
 			//Wait until videocapture is opened
 			while (!videoCapture.isOpened()) {
+				
+					videoCapture.open("http://roborio-1806-frc.local:5800/?action=stream");
+				
 			}
 			System.out.println("Video stream has been opened...");
 
@@ -185,8 +189,20 @@ public class TowerTracker {
 				if (!videoCapture.isOpened()) {
 					System.out.println("Lost camera connection");
 					connectedToCamera = false;
+					
+					while(!videoCapture.isOpened()){
+						//wait
+						videoCapture.open("http://roborio-1806-frc.local:5800/?action=stream");
+					}
+					
 				} else {
 					connectedToCamera = true;
+				}
+				
+				if(!table.isConnected()){
+					while(!table.isConnected()){
+						//wait
+					}
 				}
 
 				if (calibrationMode) {
